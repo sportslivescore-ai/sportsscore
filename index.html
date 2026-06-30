@@ -1,72 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>SportScore</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SportScore Live</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px;
+    }
+
+    .tabs button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #1f2937;
+      color: white;
+    }
+
+    .tabs button.active {
+      background: #22c55e;
+    }
+
+    #container {
+      padding: 20px;
+    }
+
+    .card {
+      background: #1f2937;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
+
+    .status {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    button.load {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      background: #3b82f6;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .empty {
+      text-align: center;
+      margin-top: 50px;
+      color: #94a3b8;
+    }
+  </style>
 </head>
 
-<body style="background:#0f172a;color:white;font-family:Arial">
+<body>
 
-<h2 style="text-align:center">⚽ SportScore Live</h2>
+<header>⚽ SportScore Live</header>
 
-<div style="text-align:center;margin:20px">
-  <button onclick="loadMatches()">Load Matches</button>
+<button class="load" onclick="loadMatches()">Load Matches</button>
+
+<div class="tabs">
+  <button class="active" onclick="setType('live')">Live</button>
+  <button onclick="setType('upcoming')">Upcoming</button>
+  <button onclick="setType('finished')">Finished</button>
 </div>
 
-<!-- ⚠️ THIS IS MOST IMPORTANT -->
-<div id="matches" style="padding:20px">
-  Loading...
-</div>
+<div id="container"></div>
 
 <script>
+let currentType = "live";
 
-const API_URL =
-"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-06-30";
+// FREE API (TheSportsDB)
+const API_KEY = "123"; // Free user
+const BASE_URL = "https://www.thesportsdb.com/api/v1/json/123";
+
+function setType(type) {
+  currentType = type;
+
+  document.querySelectorAll(".tabs button")
+    .forEach(btn => btn.classList.remove("active"));
+
+  event.target.classList.add("active");
+
+  loadMatches();
+}
 
 async function loadMatches() {
-
-  const box = document.getElementById("matches");
-  box.innerHTML = "Loading...";
+  const container = document.getElementById("container");
+  container.innerHTML = "Loading...";
 
   try {
-    const res = await fetch(API_URL);
+    let url = "";
+
+    if (currentType === "live") {
+      url = `${BASE_URL}/livescore.php?livescore=yes`;
+    } 
+    else if (currentType === "upcoming") {
+      url = `${BASE_URL}/eventsnext.php?id=133602`; // sample league
+    } 
+    else {
+      url = `${BASE_URL}/eventspastleague.php?id=133602`;
+    }
+
+    const res = await fetch(url);
     const data = await res.json();
 
-    if (!data.events) {
-      box.innerHTML = "No matches found ⚽";
-      return;
-    }
+    let events = data.events || data.events || [];
 
-    let events = data.events.filter(e =>
-      e.strSport === "Soccer"
+    // SAFE FILTER (football only)
+    events = events.filter(e =>
+      (e.strSport || "").toLowerCase().includes("foot") ||
+      (e.strSport || "").toLowerCase().includes("soccer")
     );
 
-    if (events.length === 0) {
-      box.innerHTML = "No football matches ⚽";
+    if (!events.length) {
+      container.innerHTML = `
+        <div class="empty">
+          ⚽ No matches found<br/>
+          Try another tab
+        </div>`;
       return;
     }
 
-    let html = "";
+    container.innerHTML = "";
 
-    events.forEach(m => {
-      html += `
-        <div style="background:#1f2937;margin:10px;padding:10px;border-radius:10px">
-          <h3>${m.strEvent}</h3>
-          <p>${m.dateEvent} | ${m.strTime}</p>
-        </div>
+    events.forEach(match => {
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <div class="status">${currentType.toUpperCase()}</div>
+        <h3>${match.strEvent}</h3>
+        <p>📅 ${match.dateEvent || "TBD"} | ⏰ ${match.strTime || ""}</p>
+        <p>🏆 ${match.strLeague || ""}</p>
       `;
+
+      container.appendChild(div);
     });
 
-    box.innerHTML = html;
-
   } catch (err) {
-    box.innerHTML = "Error loading data ❌";
+    document.getElementById("container").innerHTML =
+      "⚠️ Error loading matches";
     console.log(err);
   }
 }
 
-// auto run
+// auto load
 loadMatches();
-
 </script>
 
 </body>
