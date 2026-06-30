@@ -1,3 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SportScore</title>
+</head>
+
+<body style="background:#0f172a;color:white;font-family:Arial">
+
+<h2 style="text-align:center">⚽ SportScore Live</h2>
+
+<div style="text-align:center;margin:20px">
+  <button onclick="loadMatches()">Load Matches</button>
+</div>
+
+<!-- ⚠️ THIS IS MOST IMPORTANT -->
+<div id="matches" style="padding:20px">
+  Loading...
+</div>
+
 <script>
 
 const API_URL =
@@ -5,52 +24,50 @@ const API_URL =
 
 async function loadMatches() {
 
-  document.getElementById("matches").innerHTML = "Loading...";
+  const box = document.getElementById("matches");
+  box.innerHTML = "Loading...";
 
   try {
     const res = await fetch(API_URL);
     const data = await res.json();
 
     if (!data.events) {
-      document.getElementById("matches").innerHTML =
-        "No matches found ⚽";
+      box.innerHTML = "No matches found ⚽";
       return;
     }
 
-    // 🔥 STRONG FILTER (IMPORTANT FIX)
-    const events = data.events.filter(e =>
-      e.strSport === "Soccer" &&
-      e.strEvent &&
-      e.strEvent.includes(" vs ")
+    let events = data.events.filter(e =>
+      e.strSport === "Soccer"
     );
 
     if (events.length === 0) {
-      document.getElementById("matches").innerHTML =
-        "No football matches today ⚽";
+      box.innerHTML = "No football matches ⚽";
       return;
     }
 
     let html = "";
 
-    events.forEach(match => {
-
+    events.forEach(m => {
       html += `
-        <div class="card">
-          <div class="live">⚽ ${match.strStatus || "Scheduled"}</div>
-          <h3>${match.strEvent}</h3>
-          <p>${match.dateEvent} | ${match.strTime}</p>
+        <div style="background:#1f2937;margin:10px;padding:10px;border-radius:10px">
+          <h3>${m.strEvent}</h3>
+          <p>${m.dateEvent} | ${m.strTime}</p>
         </div>
       `;
     });
 
-    document.getElementById("matches").innerHTML = html;
+    box.innerHTML = html;
 
   } catch (err) {
-    document.getElementById("matches").innerHTML =
-      "Error loading data ❌";
+    box.innerHTML = "Error loading data ❌";
+    console.log(err);
   }
 }
 
+// auto run
 loadMatches();
 
 </script>
+
+</body>
+</html>
