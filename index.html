@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SportScore Pro</title>
+<title>SportScore Pro Live</title>
 
 <style>
 body {
@@ -26,6 +26,7 @@ header {
     justify-content: center;
     gap: 10px;
     margin: 15px;
+    flex-wrap: wrap;
 }
 
 .tab {
@@ -55,7 +56,15 @@ header {
 .upcoming { color: #facc15; font-weight: bold; }
 .finished { color: #ef4444; font-weight: bold; }
 
-.small { font-size: 12px; opacity: 0.8; }
+.small {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.loading {
+    text-align: center;
+    opacity: 0.7;
+}
 </style>
 </head>
 
@@ -69,16 +78,22 @@ header {
     <div class="tab" onclick="setTab('finished')">Finished</div>
 </div>
 
-<div class="container" id="matches">Loading...</div>
+<div class="container" id="matches">
+    <div class="loading">Loading matches...</div>
+</div>
 
 <script>
+
 const API_KEY = "3a0d5b0f0e77e2f681775ef1a20d237e";
+
 let currentTab = "live";
 
 function setTab(tab) {
     currentTab = tab;
+
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     event.target.classList.add("active");
+
     loadMatches();
 }
 
@@ -88,16 +103,21 @@ async function loadMatches() {
 
     if (currentTab === "live") {
         url = "https://v3.football.api-sports.io/fixtures?live=all";
-    } else if (currentTab === "upcoming") {
+    } 
+    else if (currentTab === "upcoming") {
         url = "https://v3.football.api-sports.io/fixtures?next=10";
-    } else {
+    } 
+    else {
         url = "https://v3.football.api-sports.io/fixtures?last=10";
     }
 
     try {
+
         const res = await fetch(url, {
             method: "GET",
-            headers: { "x-apisports-key": API_KEY }
+            headers: {
+                "x-apisports-key": API_KEY
+            }
         });
 
         const data = await res.json();
@@ -105,12 +125,22 @@ async function loadMatches() {
 
         let html = "";
 
+        // ✅ FIX: No crash + smart fallback
         if (!matches || matches.length === 0) {
-            html = "<p>No data available ⚽</p>";
+
+            html = `
+                <div class="card">
+                    <h3>No matches found ⚽</h3>
+                    <p>Try another tab (Live / Upcoming / Finished)</p>
+                </div>
+            `;
+
         } else {
+
             matches.forEach(m => {
 
                 let statusClass = "upcoming";
+
                 if (currentTab === "live") statusClass = "live";
                 if (currentTab === "finished") statusClass = "finished";
 
@@ -120,14 +150,18 @@ async function loadMatches() {
                             ${m.fixture.status.long}
                         </div>
 
-                        <h3>${m.teams.home.name} vs ${m.teams.away.name}</h3>
+                        <h3>
+                            ${m.teams.home.name} vs ${m.teams.away.name}
+                        </h3>
 
                         <p>
-                        Score: ${m.goals.home ?? "-"} - ${m.goals.away ?? "-"}
+                            Score: ${m.goals.home ?? "-"} - ${m.goals.away ?? "-"}
                         </p>
 
                         <div class="small">
-                            League: ${m.league.name} | Time: ${m.fixture.date}
+                            League: ${m.league.name}
+                            <br>
+                            Date: ${new Date(m.fixture.date).toLocaleString()}
                         </div>
                     </div>
                 `;
@@ -136,14 +170,20 @@ async function loadMatches() {
 
         document.getElementById("matches").innerHTML = html;
 
-    } catch (err) {
-        document.getElementById("matches").innerHTML =
-            "<p style='color:red'>API Error ❌</p>";
+    } catch (error) {
+
+        document.getElementById("matches").innerHTML = `
+            <div class="card">
+                <h3 style="color:red">API Error ❌</h3>
+                <p>Check your API key or internet connection</p>
+            </div>
+        `;
     }
 }
 
 loadMatches();
 setInterval(loadMatches, 30000);
+
 </script>
 
 </body>
