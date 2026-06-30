@@ -3,26 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SportScore Live</title>
+<title>SportScore Pro</title>
 
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     background: #0f172a;
     color: white;
 }
 
 header {
     background: #111827;
-    padding: 20px;
+    padding: 18px;
     text-align: center;
     font-size: 22px;
     font-weight: bold;
 }
 
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px;
+}
+
+.tab {
+    padding: 10px 15px;
+    background: #1f2937;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #22c55e;
+    color: black;
+}
+
 .container {
-    padding: 20px;
+    padding: 15px;
 }
 
 .card {
@@ -32,38 +51,53 @@ header {
     border-radius: 10px;
 }
 
-.live {
-    color: #22c55e;
-    font-weight: bold;
-}
+.live { color: #22c55e; font-weight: bold; }
+.upcoming { color: #facc15; font-weight: bold; }
+.finished { color: #ef4444; font-weight: bold; }
 
-.status {
-    font-size: 12px;
-    opacity: 0.8;
-}
+.small { font-size: 12px; opacity: 0.8; }
 </style>
 </head>
 
 <body>
 
-<header>
-⚽ SportScore Live - Global Football Scores
-</header>
+<header>⚽ SportScore Pro - Global Football</header>
 
-<div class="container" id="matches">
-Loading live matches...
+<div class="tabs">
+    <div class="tab active" onclick="setTab('live')">Live</div>
+    <div class="tab" onclick="setTab('upcoming')">Upcoming</div>
+    <div class="tab" onclick="setTab('finished')">Finished</div>
 </div>
+
+<div class="container" id="matches">Loading...</div>
 
 <script>
 const API_KEY = "3a0d5b0f0e77e2f681775ef1a20d237e";
+let currentTab = "live";
+
+function setTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    event.target.classList.add("active");
+    loadMatches();
+}
 
 async function loadMatches() {
+
+    let url = "";
+
+    if (currentTab === "live") {
+        url = "https://v3.football.api-sports.io/fixtures?live=all";
+    } else if (currentTab === "upcoming") {
+        url = "https://v3.football.api-sports.io/fixtures?next=10";
+    } else {
+        url = "https://v3.football.api-sports.io/fixtures?last=10";
+    }
+
     try {
-        const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+        const res = await fetch(url, {
             method: "GET",
-            headers: {
-                "x-apisports-key": API_KEY
-            }
+            headers: { "x-apisports-key": API_KEY }
         });
 
         const data = await res.json();
@@ -72,15 +106,29 @@ async function loadMatches() {
         let html = "";
 
         if (!matches || matches.length === 0) {
-            html = "<p>No live matches right now ⚽</p>";
+            html = "<p>No data available ⚽</p>";
         } else {
-            matches.forEach(match => {
+            matches.forEach(m => {
+
+                let statusClass = "upcoming";
+                if (currentTab === "live") statusClass = "live";
+                if (currentTab === "finished") statusClass = "finished";
+
                 html += `
                     <div class="card">
-                        <div class="live">🔴 LIVE</div>
-                        <h3>${match.teams.home.name} vs ${match.teams.away.name}</h3>
-                        <p>Score: ${match.goals.home ?? 0} - ${match.goals.away ?? 0}</p>
-                        <p class="status">${match.fixture.status.long}</p>
+                        <div class="${statusClass}">
+                            ${m.fixture.status.long}
+                        </div>
+
+                        <h3>${m.teams.home.name} vs ${m.teams.away.name}</h3>
+
+                        <p>
+                        Score: ${m.goals.home ?? "-"} - ${m.goals.away ?? "-"}
+                        </p>
+
+                        <div class="small">
+                            League: ${m.league.name} | Time: ${m.fixture.date}
+                        </div>
                     </div>
                 `;
             });
@@ -88,14 +136,14 @@ async function loadMatches() {
 
         document.getElementById("matches").innerHTML = html;
 
-    } catch (error) {
+    } catch (err) {
         document.getElementById("matches").innerHTML =
-            "<p style='color:red'>Error loading data ❌</p>";
+            "<p style='color:red'>API Error ❌</p>";
     }
 }
 
 loadMatches();
-setInterval(loadMatches, 30000); // auto refresh every 30 sec
+setInterval(loadMatches, 30000);
 </script>
 
 </body>
