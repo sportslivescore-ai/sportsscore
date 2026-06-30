@@ -1,137 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SportScore Live</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SportScore Live</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
 
-    header {
-      padding: 20px;
-      text-align: center;
-      font-size: 22px;
-      background: #111827;
-      font-weight: bold;
-    }
+header {
+  text-align: center;
+  padding: 20px;
+  background: #111827;
+  font-size: 22px;
+  font-weight: bold;
+}
 
-    .tabs {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px;
-    }
+.container {
+  padding: 20px;
+}
 
-    .tab {
-      padding: 10px 20px;
-      background: #1f2937;
-      border: none;
-      color: white;
-      cursor: pointer;
-      border-radius: 8px;
-    }
+.card {
+  background: #1f2937;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 10px;
+}
 
-    .tab.active {
-      background: #22c55e;
-    }
+.live {
+  color: #22c55e;
+  font-weight: bold;
+}
 
-    .container {
-      padding: 20px;
-    }
+button {
+  padding: 10px 15px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
 
-    .card {
-      background: #1f2937;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .live {
-      color: #22c55e;
-      font-weight: bold;
-    }
-  </style>
+.active {
+  background: #22c55e;
+  color: black;
+}
+</style>
 </head>
 
 <body>
 
-<header>
-  ⚽ SportScore Live - Global Football Scores
-</header>
+<header>⚽ SportScore Live</header>
 
-<div class="tabs">
-  <button class="tab active" onclick="loadMatches('live')">Live</button>
-  <button class="tab" onclick="loadMatches('upcoming')">Upcoming</button>
-  <button class="tab" onclick="loadMatches('finished')">Finished</button>
-</div>
+<div class="container">
 
-<div class="container" id="matches">
-  Loading matches...
+<button onclick="loadMatches('live')" class="active">Live</button>
+<button onclick="loadMatches('upcoming')">Upcoming</button>
+<button onclick="loadMatches('finished')">Finished</button>
+
+<div id="matches">Loading...</div>
+
 </div>
 
 <script>
-const API_KEY = "a05088a40df1f95f23f08f21bd5dd6ed";
+
+const API_URL = "https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-06-30&s=Soccer";
 
 async function loadMatches(type) {
-  let url = "";
-
-  if (type === "live") {
-    url = "https://v3.football.api-sports.io/fixtures?live=all";
-  } 
-  else if (type === "upcoming") {
-    url = "https://v3.football.api-sports.io/fixtures?next=10";
-  } 
-  else {
-    url = "https://v3.football.api-sports.io/fixtures?last=10";
-  }
 
   document.getElementById("matches").innerHTML = "Loading...";
 
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "x-apisports-key": API_KEY
-      }
-    });
-
+    const res = await fetch(API_URL);
     const data = await res.json();
 
-    const matches = data.response;
+    let events = data.events;
 
-    if (!matches || matches.length === 0) {
-      document.getElementById("matches").innerHTML =
-        "No matches found ⚽";
+    if (!events) {
+      document.getElementById("matches").innerHTML = "No matches found ⚽";
       return;
     }
 
-    document.getElementById("matches").innerHTML = matches.map(m => {
-      return `
+    let html = "";
+
+    events.forEach(match => {
+
+      html += `
         <div class="card">
-          <div class="live">${type.toUpperCase()}</div>
-          <h3>${m.teams.home.name} vs ${m.teams.away.name}</h3>
-          <p>
-            Score: ${m.goals.home ?? 0} - ${m.goals.away ?? 0}
-          </p>
+          <div class="live">⚽ ${match.strStatus || "Match"}</div>
+          <h3>${match.strEvent}</h3>
+          <p>${match.dateEvent} | ${match.strTime}</p>
         </div>
       `;
-    }).join("");
+    });
 
-  } catch (error) {
-    document.getElementById("matches").innerHTML =
-      "Error loading data ⚠️";
-    console.log(error);
+    document.getElementById("matches").innerHTML = html;
+
+  } catch (err) {
+    document.getElementById("matches").innerHTML = "Error loading data ❌";
   }
 }
 
-// default load
+// auto load
 loadMatches('live');
+
 </script>
 
 </body>
