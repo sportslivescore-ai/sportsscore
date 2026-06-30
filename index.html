@@ -1,74 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SportScore Live</title>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-}
-
-header {
-  text-align: center;
-  padding: 20px;
-  background: #111827;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.container {
-  padding: 20px;
-}
-
-.card {
-  background: #1f2937;
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 10px;
-}
-
-.live {
-  color: #22c55e;
-  font-weight: bold;
-}
-
-button {
-  padding: 10px 15px;
-  margin: 5px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.active {
-  background: #22c55e;
-  color: black;
-}
-</style>
-</head>
-
-<body>
-
-<header>⚽ SportScore Live</header>
-
-<div class="container">
-
-<button onclick="loadMatches('live')" class="active">Live</button>
-<button onclick="loadMatches('upcoming')">Upcoming</button>
-<button onclick="loadMatches('finished')">Finished</button>
-
-<div id="matches">Loading...</div>
-
-</div>
-
 <script>
 
-const API_URL = "https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-06-30&s=Soccer";
+const API_URL =
+"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-06-30";
 
 async function loadMatches(type) {
 
@@ -85,30 +18,33 @@ async function loadMatches(type) {
       return;
     }
 
+    // FILTER ONLY FOOTBALL
+    events = events.filter(e => e.strSport === "Soccer");
+
     let html = "";
 
     events.forEach(match => {
 
+      let status = match.strStatus || "Scheduled";
+
       html += `
         <div class="card">
-          <div class="live">⚽ ${match.strStatus || "Match"}</div>
+          <div class="live">⚽ ${status}</div>
           <h3>${match.strEvent}</h3>
           <p>${match.dateEvent} | ${match.strTime}</p>
         </div>
       `;
     });
 
-    document.getElementById("matches").innerHTML = html;
+    document.getElementById("matches").innerHTML =
+      html || "No football matches today ⚽";
 
   } catch (err) {
-    document.getElementById("matches").innerHTML = "Error loading data ❌";
+    document.getElementById("matches").innerHTML =
+      "Error loading data ❌";
   }
 }
 
-// auto load
 loadMatches('live');
 
 </script>
-
-</body>
-</html>
