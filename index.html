@@ -1,189 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SportScore Pro Live</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SportScore Live</title>
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #0f172a;
-    color: white;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+    }
 
-header {
-    background: #111827;
-    padding: 18px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: bold;
-}
+    header {
+      padding: 20px;
+      text-align: center;
+      font-size: 22px;
+      background: #111827;
+      font-weight: bold;
+    }
 
-.tabs {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin: 15px;
-    flex-wrap: wrap;
-}
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px;
+    }
 
-.tab {
-    padding: 10px 15px;
-    background: #1f2937;
-    border-radius: 8px;
-    cursor: pointer;
-}
+    .tab {
+      padding: 10px 20px;
+      background: #1f2937;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 8px;
+    }
 
-.tab.active {
-    background: #22c55e;
-    color: black;
-}
+    .tab.active {
+      background: #22c55e;
+    }
 
-.container {
-    padding: 15px;
-}
+    .container {
+      padding: 20px;
+    }
 
-.card {
-    background: #1f2937;
-    padding: 15px;
-    margin-bottom: 12px;
-    border-radius: 10px;
-}
+    .card {
+      background: #1f2937;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
 
-.live { color: #22c55e; font-weight: bold; }
-.upcoming { color: #facc15; font-weight: bold; }
-.finished { color: #ef4444; font-weight: bold; }
-
-.small {
-    font-size: 12px;
-    opacity: 0.8;
-}
-
-.loading {
-    text-align: center;
-    opacity: 0.7;
-}
-</style>
+    .live {
+      color: #22c55e;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>⚽ SportScore Pro - Global Football</header>
+<header>
+  ⚽ SportScore Live - Global Football Scores
+</header>
 
 <div class="tabs">
-    <div class="tab active" onclick="setTab('live')">Live</div>
-    <div class="tab" onclick="setTab('upcoming')">Upcoming</div>
-    <div class="tab" onclick="setTab('finished')">Finished</div>
+  <button class="tab active" onclick="loadMatches('live')">Live</button>
+  <button class="tab" onclick="loadMatches('upcoming')">Upcoming</button>
+  <button class="tab" onclick="loadMatches('finished')">Finished</button>
 </div>
 
 <div class="container" id="matches">
-    <div class="loading">Loading matches...</div>
+  Loading matches...
 </div>
 
 <script>
+const API_KEY = "a05088a40df1f95f23f08f21bd5dd6ed";
 
-const API_KEY = "12ecb6814c03b81110a06acadc488b58";
+async function loadMatches(type) {
+  let url = "";
 
-let currentTab = "live";
+  if (type === "live") {
+    url = "https://v3.football.api-sports.io/fixtures?live=all";
+  } 
+  else if (type === "upcoming") {
+    url = "https://v3.football.api-sports.io/fixtures?next=10";
+  } 
+  else {
+    url = "https://v3.football.api-sports.io/fixtures?last=10";
+  }
 
-function setTab(tab) {
-    currentTab = tab;
+  document.getElementById("matches").innerHTML = "Loading...";
 
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    event.target.classList.add("active");
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-apisports-key": API_KEY
+      }
+    });
 
-    loadMatches();
-}
+    const data = await res.json();
 
-async function loadMatches() {
+    const matches = data.response;
 
-    let url = "";
-
-    if (currentTab === "live") {
-        url = "https://v3.football.api-sports.io/fixtures?live=all";
-    } 
-    else if (currentTab === "upcoming") {
-        url = "https://v3.football.api-sports.io/fixtures?next=10";
-    } 
-    else {
-        url = "https://v3.football.api-sports.io/fixtures?last=10";
+    if (!matches || matches.length === 0) {
+      document.getElementById("matches").innerHTML =
+        "No matches found ⚽";
+      return;
     }
 
-    try {
+    document.getElementById("matches").innerHTML = matches.map(m => {
+      return `
+        <div class="card">
+          <div class="live">${type.toUpperCase()}</div>
+          <h3>${m.teams.home.name} vs ${m.teams.away.name}</h3>
+          <p>
+            Score: ${m.goals.home ?? 0} - ${m.goals.away ?? 0}
+          </p>
+        </div>
+      `;
+    }).join("");
 
-        const res = await fetch(url, {
-            method: "GET",
-            headers: {
-                "x-apisports-key": API_KEY
-            }
-        });
-
-        const data = await res.json();
-        const matches = data.response;
-
-        let html = "";
-
-        // ✅ FIX: No crash + smart fallback
-        if (!matches || matches.length === 0) {
-
-            html = `
-                <div class="card">
-                    <h3>No matches found ⚽</h3>
-                    <p>Try another tab (Live / Upcoming / Finished)</p>
-                </div>
-            `;
-
-        } else {
-
-            matches.forEach(m => {
-
-                let statusClass = "upcoming";
-
-                if (currentTab === "live") statusClass = "live";
-                if (currentTab === "finished") statusClass = "finished";
-
-                html += `
-                    <div class="card">
-                        <div class="${statusClass}">
-                            ${m.fixture.status.long}
-                        </div>
-
-                        <h3>
-                            ${m.teams.home.name} vs ${m.teams.away.name}
-                        </h3>
-
-                        <p>
-                            Score: ${m.goals.home ?? "-"} - ${m.goals.away ?? "-"}
-                        </p>
-
-                        <div class="small">
-                            League: ${m.league.name}
-                            <br>
-                            Date: ${new Date(m.fixture.date).toLocaleString()}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        document.getElementById("matches").innerHTML = html;
-
-    } catch (error) {
-
-        document.getElementById("matches").innerHTML = `
-            <div class="card">
-                <h3 style="color:red">API Error ❌</h3>
-                <p>Check your API key or internet connection</p>
-            </div>
-        `;
-    }
+  } catch (error) {
+    document.getElementById("matches").innerHTML =
+      "Error loading data ⚠️";
+    console.log(error);
+  }
 }
 
-loadMatches();
-setInterval(loadMatches, 30000);
-
+// default load
+loadMatches('live');
 </script>
 
 </body>
