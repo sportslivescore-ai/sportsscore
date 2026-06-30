@@ -3,7 +3,7 @@
 const API_URL =
 "https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-06-30";
 
-async function loadMatches(type) {
+async function loadMatches() {
 
   document.getElementById("matches").innerHTML = "Loading...";
 
@@ -11,33 +11,39 @@ async function loadMatches(type) {
     const res = await fetch(API_URL);
     const data = await res.json();
 
-    let events = data.events;
-
-    if (!events) {
-      document.getElementById("matches").innerHTML = "No matches found ⚽";
+    if (!data.events) {
+      document.getElementById("matches").innerHTML =
+        "No matches found ⚽";
       return;
     }
 
-    // FILTER ONLY FOOTBALL
-    events = events.filter(e => e.strSport === "Soccer");
+    // 🔥 STRONG FILTER (IMPORTANT FIX)
+    const events = data.events.filter(e =>
+      e.strSport === "Soccer" &&
+      e.strEvent &&
+      e.strEvent.includes(" vs ")
+    );
+
+    if (events.length === 0) {
+      document.getElementById("matches").innerHTML =
+        "No football matches today ⚽";
+      return;
+    }
 
     let html = "";
 
     events.forEach(match => {
 
-      let status = match.strStatus || "Scheduled";
-
       html += `
         <div class="card">
-          <div class="live">⚽ ${status}</div>
+          <div class="live">⚽ ${match.strStatus || "Scheduled"}</div>
           <h3>${match.strEvent}</h3>
           <p>${match.dateEvent} | ${match.strTime}</p>
         </div>
       `;
     });
 
-    document.getElementById("matches").innerHTML =
-      html || "No football matches today ⚽";
+    document.getElementById("matches").innerHTML = html;
 
   } catch (err) {
     document.getElementById("matches").innerHTML =
@@ -45,6 +51,6 @@ async function loadMatches(type) {
   }
 }
 
-loadMatches('live');
+loadMatches();
 
 </script>
